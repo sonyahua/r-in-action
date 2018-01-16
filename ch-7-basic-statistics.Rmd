@@ -1,0 +1,127 @@
+---
+title: "ch-7-basic-statistics"
+author: "Sonya Hua"
+date: "January 15, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+For the examples, we'll be using the data set mtcars
+A data frame with 32 observations on 11 variables.
+
+[, 1]	 mpg	 Miles/(US) gallon
+[, 2]	 cyl	 Number of cylinders
+[, 3]	 disp	 Displacement (cu.in.)
+[, 4]	 hp	 Gross horsepower
+[, 5]	 drat	 Rear axle ratio
+[, 6]	 wt	 Weight (1000 lbs)
+[, 7]	 qsec	 1/4 mile time
+[, 8]	 vs	 V/S
+[, 9]	 am	 Transmission (0 = automatic, 1 = manual)
+[,10]	 gear	 Number of forward gears
+[,11]	 carb	 Number of carburetors
+
+### 7.1 Descriptive Statistics
+
+
+```{r}
+data(mtcars)
+
+# Method 1: summary()
+
+myvars <- c("mpg", "hp", "wt")
+summary(mtcars[myvars])
+```
+`sapply` used for matrices
+```{r}
+# Method 2: Define own functions and use sapply
+
+mystats <- function(x, na.omit=F) {
+  if (na.omit)
+    x <- x[!is.na(x)]  # if we want to omit NA's
+  m <- mean(x)
+  n <- length(x)
+  s <- sd(x)
+  skew <- sum((x-m)^3/s^3)/n
+  kurt <- sum((x-m)^3/s^4)/n -3
+  return(c(n=n, mean=m, standard.dev=s, skew=skew, kurtosis=kurt))
+}
+
+sapply(mtcars[myvars],mystats)
+
+# Another example
+
+centralstats <- function(x, na.omit=F) {
+  if (na.omit)
+    x <- x[!is.na(x)]
+  m <- mean(x)
+  med <- median(x)
+  mode <- mode(x)
+  return(c(mean=m, median=med, mode=mode))
+}
+
+sapply(mtcars[myvars], centralstats)
+```
+
+The `describe()` function in the `Hmisc` package returns the number of variables and observations, the number of missing and unique values, and the five highest/lowest values
+
+```{r}
+# Method 3: Describe() from hmisc pkg
+
+#install.packages("Hmisc")
+library(Hmisc)
+sdata <- mtcars[myvars]
+
+describe(sdata)
+```
+
+For `stat.desc()`, if `norm=T`, normal distribution statistics are returned including skewness, kurtosis, their p-values, and the Shapiro-Wilk test of normality. The Shapiro–Wilk test tests the null hypothesis that a sample x1, ..., xn came from a normally distributed population. 
+```{r}
+# Method4: stat.desc() from pastecs pkg
+
+#install.packages("pastecs")
+library(pastecs)
+stat.desc(sdata, norm=T)
+```
+*Obs:* We fail to reject the null hypothesis that mpg and wt comes from a normally distributed population. This suggests mpg and wt are normally distributed, but not hp. 
+
+Kernal density plots are usually a much more effective way to view the distribution of a variable. Create the plot using plot(density(x)) where x is a numeric vector.
+
+```{r}
+par(mfrow=c(2,2))
+plot(density(sdata$mpg, bw=4))
+plot(density(sdata$wt, bw=4))
+plot(density(sdata$hp, bw=4))
+```
+```{r}
+#install.packages("psych")
+library(psych)
+describe(sdata)
+```
+*bs:* All variables are positively skewed to the left. There is a flatter distribution for MPG than there is for wt.
+
+*Skewness *is a measure of symmetry, or more precisely, the lack of symmetry. A distribution, or data set, is symmetric if it looks the same to the left and right of the center point. 
+
+*Kurtosis* is a measure of whether the data are heavy-tailed or light-tailed relative to a normal distribution.
+
+  ![](http://www.janzengroup.net/stats/images/skewkurt.JPG)
+
+There are 2 versions of `describe()` based on packages Hmisc and psych. To specify which package to use do: `Hmisc::describe(sdata)`
+
+### 7.1.3 Descriptive Stats by Group
+
+We can usage `aggregate()` for single functions and `by=list(am=mtcars$am)` to specify we want a caolumn called `am` and the means to be grouped by this column
+
+```{r}
+
+mtcars
+aggregate(sdata, by=list(am=mtcars$am), mean)
+
+aggregate(sdata,by=list(am=mtcars$am), sd)
+```
+*Obs:* Automatic transmissions are much slower and have less horsepower than manual transmissions. It's also heavier than manual. 
+
+
